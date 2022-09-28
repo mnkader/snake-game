@@ -1,9 +1,13 @@
+import math
 import queue
 from collections import deque as deque
+import traceback
 import pygame
 import time
 import random
+from logger import GenericLogger
 
+logging = GenericLogger('snake.log', 'C:\\MNK\\myprojects\\snake-game\\')
 def get_neighbors(position, obstacles : list):
     in_grid_neighbors = []
     neighbors = [[position[0] + 10, position[1]],
@@ -87,8 +91,8 @@ astar_snake_body = [[150, 100],
               [120, 100]
               ]
 # fruit position
-fruit_position = [random.randrange(1, (window_x//10)) * 10,
-                  random.randrange(1, (window_y//10)) * 10]
+fruit_position = [70,
+                  70]
  
 fruit_spawn = True
  
@@ -101,6 +105,7 @@ change_to = direction
 score = 0
 bfs_score = 0
 astar_score = 0
+
 # displaying Score function
 def show_score(choice, color, font, size, my_score, text, place):
    
@@ -208,7 +213,10 @@ def a_star(start:tuple, end:tuple, obstacles:list):
     came_from[start] = None
     cost_so_far[start] = 0
     start_timer = time.perf_counter()
+    count = 0
+
     while q:
+        
         node = q.get()
         
         neighbors = get_neighbors(node, obstacles)
@@ -222,11 +230,12 @@ def a_star(start:tuple, end:tuple, obstacles:list):
                 priority = new_cost + h(end, next_node)
                 q.put(next_node, priority)
                 came_from[next_node] = node
-        end_timer = time.perf_counter()
-        if (end_timer - start_timer) > 1:
-            print(f'Stuck in a loop at breath_first_search')
         if node == end:
             break
+        else:
+            count +=1
+
+    
     current = end
     path = [current]
 
@@ -235,11 +244,13 @@ def a_star(start:tuple, end:tuple, obstacles:list):
         path.append(current)
         if current == start:
             break
+    if count == 1:
+        print('count == 1')
     return path
+##################################################################################
 try:
     # Main Function
     while True:
-        
         # handling key events
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
@@ -277,67 +288,90 @@ try:
         # Snake body growing mechanism
         # if fruits and snakes collide then scores
         # will be incremented by 10
-        snake_body.insert(0, list(snake_position))
-        obstacles = [ai_snake_body, snake_body, astar_snake_body]
-
+        #snake_body.insert(0, list(snake_position))
+        #obstacles = [ai_snake_body, snake_body, astar_snake_body]
+        obstacles = [astar_snake_body]
         #check if any snake ate a fruit
-        if snake_position[0] == fruit_position[0] and snake_position[1] == fruit_position[1]:
-            score += 10
-            fruit_spawn = False
-        else:
-            snake_body.pop()
+       #if snake_position[0] == fruit_position[0] and snake_position[1] == fruit_position[1]:
+       #    score += 10
+       #    fruit_spawn = False
+       #else:
+       #    snake_body.pop()
         if astar_snake_position[0] == fruit_position[0] and astar_snake_position[1] == fruit_position[1]:
                 astar_score += 10
                 fruit_spawn = False
         else:
             astar_snake_body.pop()
-        if ai_snake_position[0] == fruit_position[0] and ai_snake_position[1] == fruit_position[1]:
-            bfs_score += 10
-            fruit_spawn = False
-        else:
-            ai_snake_body.pop()
+       #if ai_snake_position[0] == fruit_position[0] and ai_snake_position[1] == fruit_position[1]:
+       #    bfs_score += 10
+       #    fruit_spawn = False
+       #else:
+       #    ai_snake_body.pop()
 
-        #spawn a fruit    
+        #spawn a fruit   
+        blocked = False 
         while not fruit_spawn:
-            blocked = False
             fruit_position = [random.randrange(1, (window_x//10)) * 10,
-                            random.randrange(1, (window_y//10)) * 10]
+                           random.randrange(1, (window_y//10)) * 10]
+            if blocked == True:
+                print('unblocking fruit')
+                fruit_position = [random.randrange(1, (window_x//10)) * 10,
+                           random.randrange(1, (window_y//10)) * 10]
+                blocked = False
+
             for obstacle in obstacles:
                 if fruit_position in obstacle:
+                    print('fruit pos in obstacle')
                     blocked = True
-                    continue
             if not blocked:
                 fruit_spawn = True
             
         if fruit_spawn:
             #do move
-            bfs_moves = breath_first_search(tuple(ai_snake_body[0]), tuple(fruit_position), obstacles)
+            logging.log(f'fruit position {fruit_position}')
+            bfs_moves = breath_first_search(tuple(astar_snake_body[0]), tuple(fruit_position), obstacles)
+            if bfs_moves is not None and len(bfs_moves):
+                logging.log(f'bfs moves: {bfs_moves[0]}')
+            else:
+                print('no bfs moves')
             astar_moves = a_star(tuple(astar_snake_body[0]), tuple(fruit_position), obstacles)
+            if astar_moves is not None and len(astar_moves):
+                logging.log(f'astar moves: {astar_moves[0]}')
+            else:
+                print('no a* moves')
+            
+            logging.log('all algos created')
             astar_moves.reverse()
             if astar_moves is not None and len(astar_moves):
-                astar_snake_position = move_snake(astar_moves[1], astar_snake_body[0], astar_snake_position)
+                if bfs_moves is not None and len(bfs_moves):
+                    if len(bfs_moves) >= (len(astar_moves)-1):
+                        astar_snake_position = move_snake(astar_moves[1], astar_snake_body[0], astar_snake_position)
+                    else: 
+                        astar_snake_position = move_snake(bfs_moves[0], astar_snake_body[0], astar_snake_position)
+                else:
+                    astar_snake_position = move_snake(astar_moves[1], astar_snake_body[0], astar_snake_position)
             else: 
                 print('a* path not found')
                 astar_score -= 10
                 astar_snake_body.pop()
-            if  bfs_moves is not None and len(bfs_moves):
-                ai_snake_position = move_snake(bfs_moves[0], ai_snake_body[0], ai_snake_position)
-            else:
-                print('bfs path not found')
-                bfs_score -= 10
-                ai_snake_body.pop()
+            #if  bfs_moves is not None and len(bfs_moves):
+            #    ai_snake_position = move_snake(bfs_moves[0], ai_snake_body[0], ai_snake_position)
+            #else:
+            #    print('bfs path not found')
+            #    bfs_score -= 10
+            #    ai_snake_body.pop()
             #create body
             astar_snake_body.insert(0, list(astar_snake_position))
-            ai_snake_body.insert(0, list(ai_snake_position))
+            #ai_snake_body.insert(0, list(ai_snake_position))
      
         game_window.fill(black)
         
        #for pos in snake_body:
        #    pygame.draw.rect(game_window, green,
        #                    pygame.Rect(pos[0], pos[1], 10, 10))
-        for pos in ai_snake_body:
-            pygame.draw.rect(game_window, blue,
-                            pygame.Rect(pos[0], pos[1], 10, 10))
+        #for pos in ai_snake_body:
+        #    pygame.draw.rect(game_window, blue,
+        #                    pygame.Rect(pos[0], pos[1], 10, 10))
         for pos in astar_snake_body:
             pygame.draw.rect(game_window, red,
                             pygame.Rect(pos[0], pos[1], 10, 10))
@@ -351,42 +385,43 @@ try:
         #    game_over()
     
         # Touching the snake body
-        for block in snake_body[1:]:
-            if snake_position[0] == block[0] and snake_position[1] == block[1]:
-                game_over('og snake touched itself')
-        for block in ai_snake_body[1:]:
-            if ai_snake_position[0] == block[0] and ai_snake_position[1] == block[1]:
-                game_over('bfs snake touched itself')
+       #for block in snake_body[1:]:
+       #    if snake_position[0] == block[0] and snake_position[1] == block[1]:
+       #        game_over('og snake touched itself')
+        #for block in ai_snake_body[1:]:
+        #    if ai_snake_position[0] == block[0] and ai_snake_position[1] == block[1]:
+        #        game_over('bfs snake touched itself')
         for block in astar_snake_body[1:]:
             if astar_snake_position[0] == block[0] and astar_snake_position[1] == block[1]:
                 game_over('astar snake touched itself')
         #touching the other snake
         #if snake head hits any part of the other snake, game_over()
-        for block in ai_snake_body[1:]:
-            if snake_position[0] == block[0] and snake_position[1] == block[1]:
-                game_over('bfs snake hit a snake')
-            if astar_snake_position[0] == block[0] and astar_snake_position[1] == block[1]:
-                game_over('bfs snake hit a snake')
-        for block in astar_snake_body[1:]:
-            if snake_position[0] == block[0] and snake_position[1] == block[1]:
-                game_over('astar snake hit a snake') 
-            if ai_snake_position[0] == block[0] and ai_snake_position[1] == block[1]:
-                game_over('astar snake hit a snake') 
-        for block in snake_body[1:]:
-            if astar_snake_position[0] == block[0] and astar_snake_position[1] == block[1]:
-                game_over('og snake hit a snake')
-            if ai_snake_position[0] == block[0] and ai_snake_position[1] == block[1]:
-                game_over('og snake hit a snake') 
+        #for block in ai_snake_body[1:]:
+        #    #if snake_position[0] == block[0] and snake_position[1] == block[1]:
+        #    #    game_over('bfs snake hit a snake')
+        #    if astar_snake_position[0] == block[0] and astar_snake_position[1] == block[1]:
+        #        game_over('bfs snake hit a snake')
+        #for block in astar_snake_body[1:]:
+        #    #if snake_position[0] == block[0] and snake_position[1] == block[1]:
+        #    #    game_over('astar snake hit a snake') 
+        #    if ai_snake_position[0] == block[0] and ai_snake_position[1] == block[1]:
+        #        game_over('astar snake hit a snake') 
+       #for block in snake_body[1:]:
+       #    if astar_snake_position[0] == block[0] and astar_snake_position[1] == block[1]:
+       #        game_over('og snake hit a snake')
+       #    if ai_snake_position[0] == block[0] and ai_snake_position[1] == block[1]:
+       #        game_over('og snake hit a snake') 
     
         # displaying score countinuously
-        show_score(1, white, 'times new roman', 20, score, 'normal', (10,10))
-        show_score(1, white, 'times new roman', 20, bfs_score, 'bfs', (10,30))
-        show_score(1, white, 'times new roman', 20, astar_score, 'astar', (10,50))
-    
+        #show_score(1, white, 'times new roman', 20, score, 'normal', (10,10))
+        #show_score(1, white, 'times new roman', 20, bfs_score, 'bfs', (10,30))
+        show_score(1, white, 'times new roman', 20, astar_score, 'astar', (10,10))
+
         # Refresh game screen
         pygame.display.update()
     
         # Frame Per Second /Refresh Rate
         fps.tick(snake_speed)
 except Exception as e:
+    traceback.print_exc()
     print(e) 
