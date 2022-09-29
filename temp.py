@@ -34,11 +34,11 @@ def distance(pos1, pos2):
 dRow = [ -1, 0, 1, 0]
 dCol = [ 0, 1, 0, -1]
 
-snake_speed = 11
+snake_speed = 5
  
 # Window size
-window_x = 400
-window_y = 400
+window_x = 500
+window_y = 500
 
 def is_valid_pos(pos : tuple, obstacles : list):
     for obstacle in obstacles:
@@ -92,7 +92,7 @@ astar_snake_body = [[150, 100],
               ]
 # fruit position
 fruit_position = [70,
-                  70]
+                  60]
  
 fruit_spawn = True
  
@@ -204,52 +204,91 @@ def breath_first_search(start : tuple, end : tuple, obstacles : list):
 def h(food, n):
         # Manhattan distance
         return abs(food[0]-n[0]) + abs(food[1]-n[1])
+logger = GenericLogger('astar.log', 'C:\\MNK\\myprojects\\snake-game\\')
+logger2 = GenericLogger('whileloop.log', 'C:\\MNK\\myprojects\\snake-game\\')
 
-def a_star(start:tuple, end:tuple, obstacles:list):
+def get_least_costly_node(neighbors, end : tuple):
+    
+    least_costly_node = neighbors[0]
+    least_costly = h(end, least_costly_node)
+    for next_node in neighbors:
+        cost_of_travel = h(end, next_node)
+        if least_costly > cost_of_travel:
+            least_costly = cost_of_travel
+            least_costly_node = next_node
+    return least_costly_node
+
+def a_star(start : tuple, end : tuple, obstacles : list):
+    #logger.log(f'start a*')
     q = queue.PriorityQueue()
     q.put(start, 0)
     came_from = {}
     cost_so_far = {}
     came_from[start] = None
     cost_so_far[start] = 0
-    start_timer = time.perf_counter()
     count = 0
 
-    while q:
-        
+    while q:  
         node = q.get()
-        
+        if start == (70, 90):
+            logger.log(f'Node: {node}')
         neighbors = get_neighbors(node, obstacles)
-        if neighbors is None:
+        if neighbors is None or len(neighbors) == 0:
             break
+        least_costly_node = get_least_costly_node(neighbors, end)
+        if start == (70, 90):
+            logger.log(f'Least costly node: {least_costly_node}')
         for next_node in neighbors:
             next_node = tuple(next_node)
-            new_cost = cost_so_far[node] + 10
+            if start == (70, 90):
+                logger.log(f'Next Node: {next_node}')
+            new_cost = cost_so_far[node] + 10   
+
             if next_node not in cost_so_far or new_cost < cost_so_far[next_node]:
                 cost_so_far[next_node] = new_cost
-                priority = new_cost + h(end, next_node)
-                q.put(next_node, priority)
-                came_from[next_node] = node
+                cost_of_travel = new_cost + h(end, next_node)
+                if start == (70, 90):
+                    logger.log(f'cost of travel: {cost_of_travel}')
+                if least_costly_node == next_node:
+                    q.put(tuple(next_node), cost_of_travel + 40)
+                    came_from[tuple(next_node)] = node
+                    if start == (70, 90):
+                        logger.log(f'came from {next_node}, {node}')
+                else:
+                    q.put(tuple(next_node), cost_of_travel-20)
+                    came_from[tuple(next_node)] = node
+                    if start == (70, 90):
+                        logger.log(f'came from {next_node}, {node}')
+       #for next_node in neighbors:
+       #    if next_node == least_costly_node:
+       #        q.put(least_costly_node, least_costly + 30)
+       #    else:
+       #        new_cost = cost_so_far[node] + 10 + h(end, next_node)
+       #        q.put(tuple(next_node), new_cost)
+       #    came_from[tuple(next_node)] = node
+        #if start == (70, 90):
+        #    break
         if node == end:
             break
         else:
             count +=1
+            if count >= 2000 and node == (490, 490):
+                return []
 
-    
     current = end
     path = [current]
-
     for _ in range(len(came_from)):
         current = came_from[current]
         path.append(current)
         if current == start:
             break
-    if count == 1:
-        print('count == 1')
+
     return path
 ##################################################################################
 try:
     # Main Function
+    #fruit_test = [[0,50],[0,40],[0,30],[0,20],[10,20],[10,10],[10,0],[20,0],[0,0]]
+    tmp_count = 0
     while True:
         # handling key events
         for event in pygame.event.get():
@@ -325,31 +364,37 @@ try:
                     blocked = True
             if not blocked:
                 fruit_spawn = True
-            
+        for pos in astar_snake_body:
+            pygame.draw.rect(game_window, red,
+                            pygame.Rect(pos[0], pos[1], 10, 10))  
+        pygame.draw.rect(game_window, white, pygame.Rect(
+            fruit_position[0], fruit_position[1], 10, 10)) 
+        pygame.display.update() 
         if fruit_spawn:
             #do move
-            logging.log(f'fruit position {fruit_position}')
-            bfs_moves = breath_first_search(tuple(astar_snake_body[0]), tuple(fruit_position), obstacles)
-            if bfs_moves is not None and len(bfs_moves):
-                logging.log(f'bfs moves: {bfs_moves[0]}')
-            else:
-                print('no bfs moves')
+            #logging.log(f'fruit position {fruit_position}')
+            #bfs_moves = breath_first_search(tuple(astar_snake_body[0]), tuple(fruit_position), obstacles)
+            #if bfs_moves is not None and len(bfs_moves):
+            #    logging.log(f'bfs moves: {bfs_moves[0]}')
+            #else:
+            #    print('no bfs moves')
             astar_moves = a_star(tuple(astar_snake_body[0]), tuple(fruit_position), obstacles)
-            if astar_moves is not None and len(astar_moves):
-                logging.log(f'astar moves: {astar_moves[0]}')
-            else:
-                print('no a* moves')
-            
-            logging.log('all algos created')
+            if astar_moves is None or not len(astar_moves):
+                astar_moves = a_star(tuple(astar_snake_body[0]), tuple((50,50)), obstacles)
+                
+
             astar_moves.reverse()
             if astar_moves is not None and len(astar_moves):
-                if bfs_moves is not None and len(bfs_moves):
-                    if len(bfs_moves) >= (len(astar_moves)-1):
-                        astar_snake_position = move_snake(astar_moves[1], astar_snake_body[0], astar_snake_position)
-                    else: 
-                        astar_snake_position = move_snake(bfs_moves[0], astar_snake_body[0], astar_snake_position)
-                else:
-                    astar_snake_position = move_snake(astar_moves[1], astar_snake_body[0], astar_snake_position)
+                #print(astar_snake_body[0])
+                #print(astar_moves[1])
+                astar_snake_position = move_snake(astar_moves[1], astar_snake_body[0], astar_snake_position)
+            #    if bfs_moves is not None and len(bfs_moves):
+            #        if len(bfs_moves) >= (len(astar_moves)-1):
+            #            astar_snake_position = move_snake(astar_moves[1], astar_snake_body[0], astar_snake_position)
+            #        else: 
+            #            astar_snake_position = move_snake(bfs_moves[0], astar_snake_body[0], astar_snake_position)
+            #    else:
+            #        astar_snake_position = move_snake(astar_moves[1], astar_snake_body[0], astar_snake_position)
             else: 
                 print('a* path not found')
                 astar_score -= 10

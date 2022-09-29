@@ -12,4 +12,5 @@ class GenericLogger:
             self.todays_date = arrow.now('UTC+2').format(fmt='YYYY-MM-DD')
         self.log_file = open(self.path + self.name, 'a')
         self.log_file.write(arrow.now('UTC+2').format(fmt='YYYY-MM-DD HH:mm:ss.SSS') + ' :: ' + data_to_write)
+        self.log_file.write('\n')
         self.log_file.close()
