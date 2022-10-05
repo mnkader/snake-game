@@ -1,3 +1,13 @@
-GRID = [[i*10, j*10] for i in range(200//10) for j in range(200//10)]
+import time
 
-print(GRID)
+start = time.perf_counter()
+
+time.sleep(1.2)
+end = 0
+while True:
+    if (end-start) > 1:
+        print('stuck')
+        break
+    end = time.perf_counter()
+
+print(f'{end-start}')

@@ -34,7 +34,7 @@ def distance(pos1, pos2):
 dRow = [ -1, 0, 1, 0]
 dCol = [ 0, 1, 0, -1]
 
-snake_speed = 5
+snake_speed = 6
  
 # Window size
 window_x = 500
@@ -204,8 +204,6 @@ def breath_first_search(start : tuple, end : tuple, obstacles : list):
 def h(food, n):
         # Manhattan distance
         return abs(food[0]-n[0]) + abs(food[1]-n[1])
-logger = GenericLogger('astar.log', 'C:\\MNK\\myprojects\\snake-game\\')
-logger2 = GenericLogger('whileloop.log', 'C:\\MNK\\myprojects\\snake-game\\')
 
 def get_least_costly_node(neighbors, end : tuple):
     
@@ -216,63 +214,42 @@ def get_least_costly_node(neighbors, end : tuple):
         if least_costly > cost_of_travel:
             least_costly = cost_of_travel
             least_costly_node = next_node
-    return least_costly_node
+    return least_costly_node  
 
 def a_star(start : tuple, end : tuple, obstacles : list):
-    #logger.log(f'start a*')
+    print(start)
+    print(end)
+
     q = queue.PriorityQueue()
-    q.put(start, 0)
+    q.put((0, start))
     came_from = {}
     cost_so_far = {}
     came_from[start] = None
     cost_so_far[start] = 0
     count = 0
 
-    while q:  
-        node = q.get()
-        if start == (70, 90):
-            logger.log(f'Node: {node}')
+    while q: 
+        node = q.get()[1]
+
         neighbors = get_neighbors(node, obstacles)
         if neighbors is None or len(neighbors) == 0:
+           
             break
-        least_costly_node = get_least_costly_node(neighbors, end)
-        if start == (70, 90):
-            logger.log(f'Least costly node: {least_costly_node}')
+
         for next_node in neighbors:
             next_node = tuple(next_node)
-            if start == (70, 90):
-                logger.log(f'Next Node: {next_node}')
             new_cost = cost_so_far[node] + 10   
 
             if next_node not in cost_so_far or new_cost < cost_so_far[next_node]:
                 cost_so_far[next_node] = new_cost
                 cost_of_travel = new_cost + h(end, next_node)
-                if start == (70, 90):
-                    logger.log(f'cost of travel: {cost_of_travel}')
-                if least_costly_node == next_node:
-                    q.put(tuple(next_node), cost_of_travel + 40)
-                    came_from[tuple(next_node)] = node
-                    if start == (70, 90):
-                        logger.log(f'came from {next_node}, {node}')
-                else:
-                    q.put(tuple(next_node), cost_of_travel-20)
-                    came_from[tuple(next_node)] = node
-                    if start == (70, 90):
-                        logger.log(f'came from {next_node}, {node}')
-       #for next_node in neighbors:
-       #    if next_node == least_costly_node:
-       #        q.put(least_costly_node, least_costly + 30)
-       #    else:
-       #        new_cost = cost_so_far[node] + 10 + h(end, next_node)
-       #        q.put(tuple(next_node), new_cost)
-       #    came_from[tuple(next_node)] = node
-        #if start == (70, 90):
-        #    break
+                q.put((cost_of_travel, tuple(next_node)))
+                came_from[tuple(next_node)] = node
         if node == end:
             break
         else:
             count +=1
-            if count >= 2000 and node == (490, 490):
+            if node == (490, 490) and  node != end:
                 return []
 
     current = end
