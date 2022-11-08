@@ -40,7 +40,7 @@ class Game:
 
     def __init__(self):        
         self.obstacles = []
-        self.snake_speed = 15
+        self.snake_speed = 10
         self.is_playable = False
         self.window_x = 500
         self.window_y = 500  
@@ -50,7 +50,7 @@ class Game:
         self.fruit_spawn = True
         self.game_window = None
         self.fps = None
-        self.snakes: list[Snake] = [Snake(Game.snake1, Snake.astar, Game.yellow, Game.snake1head)]#,Snake(Game.snake2, Snake.bfs, Game.blue, Game.snake2head)]#,Snake(Game.snake3, Snake.bfs, Game.red, Game.snake3head)]
+        self.snakes: list[Snake] = [Snake(Game.snake1, Snake.astar, Game.yellow, Game.snake1head)]#,Snake(Game.snake2, Snake.bfs, Game.blue, Game.snake2head)]#,Snake(Game.snake3, Snake.bfs, Game.green, Game.snake3head)]
         self.pygame_init()
     
     def is_valid_pos(self, pos : tuple, obstacles : list):
@@ -187,6 +187,7 @@ class Game:
                                 moves = self.algo.breath_first_search(tuple(snake.snake_position),tuple(self.get_random()),self.get_obstacles())
                                 if moves is None or len(moves) == 0:
                                     print('no move to random')
+                                    self.game_over()
                                 else:
                                     snake.move_snake(moves[0],snake.snake_body[0])
                                     snake.increase_snake()
@@ -216,7 +217,7 @@ class Game:
                 for snake in self.snakes:
                     for pos in snake.snake_body:
                         pygame.draw.rect(self.game_window, snake.colour,
-                                        pygame.Rect(pos[0], pos[1], 10, 10))  
+                                        pygame.Rect(pos[0], pos[1], 8, 8))  
                     pygame.draw.rect(self.game_window, Game.white, pygame.Rect(
                         self.fruit_position[0], self.fruit_position[1], 10, 10)) 
 
